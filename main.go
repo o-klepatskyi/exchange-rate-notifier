@@ -32,7 +32,7 @@ func main() {
         fmt.Println("Error loading .env file:", err)
     }
 
-    go ratefetcher.StartRateFetcher() // Start the background rate fetcher
+    go ratefetcher.RateFetchLoop() // Start the background rate fetcher
 
     http.HandleFunc("/rate", rateHandler)
     http.HandleFunc("/sendEmails", sendEmailsHandler)

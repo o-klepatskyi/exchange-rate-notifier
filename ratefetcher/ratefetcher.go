@@ -42,7 +42,7 @@ func fetchRate() {
     fmt.Println("Rate not found")
 }
 
-func StartRateFetcher() {
+func RateFetchLoop() {
     fetchRate()
     ticker := time.NewTicker(10 * time.Second)
     for cachedRate == 0 {
