@@ -44,8 +44,13 @@ func fetchRate() {
 
 func StartRateFetcher() {
     fetchRate()
+    ticker := time.NewTicker(10 * time.Second)
+    for cachedRate == 0 {
+        <-ticker.C
+        fetchRate()
+    }
     // Monobank updates its cached rate every 5 minutes, no need to do it more often
-    ticker := time.NewTicker(5 * time.Minute)
+    ticker = time.NewTicker(5 * time.Minute)
     for {
         <-ticker.C
         fetchRate()
