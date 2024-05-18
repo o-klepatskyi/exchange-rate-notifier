@@ -34,7 +34,7 @@ func sendEmailsHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	err := godotenv.Load()
     if err != nil {
-        fmt.Println("Error loading .env file:", err)
+        fmt.Println("Warn: .env file was not loaded. If you are running inside docker, ingore this.")
     }
 
     go ratefetcher.RateFetchLoop() // Start the background rate fetcher
