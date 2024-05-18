@@ -11,11 +11,21 @@ import (
 )
 
 func subscribeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+        http.Error(w, "", http.StatusMethodNotAllowed)
+        return
+    }
+
 	email := r.FormValue("email")
 	mailsender.SubscribeEmail(email)
 }
 
 func rateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+        http.Error(w, "", http.StatusMethodNotAllowed)
+        return
+    }
+
     rate := ratefetcher.GetCachedRate()
     if rate == 0 {
         http.Error(w, "", http.StatusBadRequest)
@@ -25,6 +35,11 @@ func rateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendEmailsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+        http.Error(w, "", http.StatusMethodNotAllowed)
+        return
+    }
+
     rate := ratefetcher.GetCachedRate()
     if rate == 0 {
         fmt.Printf("Rate is not available yet")
@@ -41,7 +56,7 @@ func MailSendLoop() {
 			mailsender.SendEmails(rate)
 			time.Sleep(24 * time.Hour)
 		} else {
-			fmt.Println("Rate is invalid, retrying shortly...")
+			fmt.Println("Rate is invalid, retrying sending emails shortly...")
 			time.Sleep(10 * time.Second)
 		}
 	}
