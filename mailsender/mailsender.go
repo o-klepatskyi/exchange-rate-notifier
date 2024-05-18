@@ -5,10 +5,8 @@ import (
 	"net/smtp"
 	"net/mail"
 	"os"
-	"slices"
+	"github.com/o-klepatskyi/exchange-rate-notifier/database"
 )
-
-var emailList []string = []string{}
 
 func isEmailValid(email string) bool {
     _, err := mail.ParseAddress(email)
@@ -20,24 +18,29 @@ func SubscribeEmail(email string) bool {
 		fmt.Println("Invalid email:", email)
 		return false
 	}
-	if slices.Contains(emailList, email) {
-		fmt.Println("Email already subscribed:", email)
+	err := database.AddEmail(email)
+	if err != nil {
+		fmt.Println("Error adding email:", err)
 		return false
 	}
-	emailList = append(emailList, email)
 	fmt.Println("Email subscribed:", email)
 	return true
 }
 
 func SendEmails(rate float64) {
+	emailList, err := database.GetAllEmails()
+	if err != nil {
+		fmt.Println("Error fetching emails:", err)
+		return
+	}
 	if len(emailList) == 0 {
 		fmt.Println("No emails subscribed")
 		return
 	}
-	smtpHost := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_HOST")
-    smtpPort := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_PORT")
-    smtpUser := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_USER")
-    smtpPass := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_PASS")
+	smtpHost := os.Getenv("SMTP_HOST")
+    smtpPort := os.Getenv("SMTP_PORT")
+    smtpUser := os.Getenv("SMTP_USER")
+    smtpPass := os.Getenv("SMTP_PASS")
 
     auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
     from := smtpUser
@@ -49,10 +52,10 @@ func SendEmails(rate float64) {
 		"\r\n" +
 		body + "\r\n")
 
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, emailList, msg)
+	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, emailList, msg)
 	if err != nil {
 		fmt.Println("Error sending emails:", err.Error())
 	} else {
-		fmt.Println("Emails sent")
+		fmt.Printf("Emails sent to %d subscribers\n", len(emailList))
 	}
 }

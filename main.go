@@ -1,41 +1,22 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
 	"github.com/joho/godotenv"
-    "github.com/o-klepatskyi/exchange-rate-notifier/ratefetcher"
-    "github.com/o-klepatskyi/exchange-rate-notifier/mailsender"
+	"github.com/o-klepatskyi/exchange-rate-notifier/database"
+	"github.com/o-klepatskyi/exchange-rate-notifier/mailsender"
+	"github.com/o-klepatskyi/exchange-rate-notifier/ratefetcher"
 )
-
-func subscribeHandler(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	mailsender.SubscribeEmail(email)
-}
-
-func rateHandler(w http.ResponseWriter, r *http.Request) {
-    rate := ratefetcher.GetCachedRate()
-    if rate == 0 {
-        http.Error(w, "", http.StatusBadRequest)
-        return
-    }
-    fmt.Fprintf(w, "%.2f", rate)
-}
-
-func sendEmailsHandler(w http.ResponseWriter, r *http.Request) {
-    rate := ratefetcher.GetCachedRate()
-    if rate == 0 {
-        fmt.Printf("Rate is not available yet")
-        return
-    }
-    mailsender.SendEmails(rate)
-}
 
 func main() {
 	err := godotenv.Load()
     if err != nil {
         fmt.Println("Warn: .env file was not loaded. If you are running inside docker, ingore this.")
     }
+
+	database.InitDB()
+	database.CreateTable()
 
     go ratefetcher.RateFetchLoop() // Start the background rate fetcher
 
