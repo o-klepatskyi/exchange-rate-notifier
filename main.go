@@ -3,11 +3,65 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 	"github.com/joho/godotenv"
 	"github.com/o-klepatskyi/exchange-rate-notifier/database"
 	"github.com/o-klepatskyi/exchange-rate-notifier/mailsender"
 	"github.com/o-klepatskyi/exchange-rate-notifier/ratefetcher"
 )
+
+func subscribeHandler(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	mailsender.SubscribeEmail(email)
+}
+
+func rateHandler(w http.ResponseWriter, r *http.Request) {
+    rate := ratefetcher.GetCachedRate()
+    if rate == 0 {
+        http.Error(w, "", http.StatusBadRequest)
+        return
+    }
+    fmt.Fprintf(w, "%.2f", rate)
+}
+
+func sendEmailsHandler(w http.ResponseWriter, r *http.Request) {
+    rate := ratefetcher.GetCachedRate()
+    if rate == 0 {
+        fmt.Printf("Rate is not available yet")
+        return
+    }
+    mailsender.SendEmails(rate)
+}
+
+func MailSendLoop() {
+	// Send updates on subscribed emails every 24 hours
+	for {
+		rate := ratefetcher.GetCachedRate()
+		if rate != 0 {
+			mailsender.SendEmails(rate)
+			time.Sleep(24 * time.Hour)
+		} else {
+			fmt.Println("Rate is invalid, retrying shortly...")
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+func RateFetchLoop() {
+    success := ratefetcher.FetchRate()
+
+	// Make sure we fetch rate as fast as possible first time
+    for !success {
+        time.Sleep(10 * time.Second)
+        success = ratefetcher.FetchRate()
+    }
+
+    // Monobank updates its cached rate every 5 minutes, no need to do it more often
+    for {
+        time.Sleep(5 * time.Minute)
+        ratefetcher.FetchRate()
+    }
+}
 
 func main() {
 	err := godotenv.Load()
@@ -18,7 +72,8 @@ func main() {
 	database.InitDB()
 	database.CreateTable()
 
-    go ratefetcher.RateFetchLoop() // Start the background rate fetcher
+    go RateFetchLoop()
+	go MailSendLoop()
 
     http.HandleFunc("/rate", rateHandler)
     http.HandleFunc("/sendEmails", sendEmailsHandler)
