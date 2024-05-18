@@ -8,6 +8,11 @@ import (
     "github.com/o-klepatskyi/exchange-rate-notifier/mailsender"
 )
 
+func subscribeHandler(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	mailsender.SubscribeEmail(email)
+}
+
 func rateHandler(w http.ResponseWriter, r *http.Request) {
     rate := ratefetcher.GetCachedRate()
     if rate == 0 {
@@ -36,6 +41,7 @@ func main() {
 
     http.HandleFunc("/rate", rateHandler)
     http.HandleFunc("/sendEmails", sendEmailsHandler)
+	http.HandleFunc("/subscribe", subscribeHandler)
 
     fmt.Println("Starting server at port 8080")
     if err := http.ListenAndServe(":8080", nil); err != nil {

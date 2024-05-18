@@ -3,13 +3,30 @@ package mailsender
 import (
 	"fmt"
 	"net/smtp"
+	"net/mail"
 	"os"
+	"slices"
 )
 
-var emailList []string = []string{"test@gmail.com"}
+var emailList []string = []string{}
 
-func AddEmail(email string) {
+func isEmailValid(email string) bool {
+    _, err := mail.ParseAddress(email)
+    return err == nil
+}
+
+func SubscribeEmail(email string) bool {
+	if !isEmailValid(email) {
+		fmt.Println("Invalid email:", email)
+		return false
+	}
+	if slices.Contains(emailList, email) {
+		fmt.Println("Email already subscribed:", email)
+		return false
+	}
 	emailList = append(emailList, email)
+	fmt.Println("Email subscribed:", email)
+	return true
 }
 
 func SendEmails(rate float64) {
@@ -21,7 +38,6 @@ func SendEmails(rate float64) {
     smtpPort := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_PORT")
     smtpUser := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_USER")
     smtpPass := os.Getenv("EXCHANGE_RATE_NOTIFIER_SMTP_PASS")
-	fmt.Println(smtpHost, smtpPort, smtpUser, smtpPass)
 
     auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
     from := smtpUser
